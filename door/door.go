@@ -4,10 +4,11 @@ import (
 	"bytes"
 	cryptoRand "crypto/rand"
 	"fmt"
-	rpio "github.com/stianeikeland/go-rpio/v4"
 	"log"
 	"sync"
 	"time"
+
+	rpio "github.com/stianeikeland/go-rpio/v4"
 )
 
 type Door struct {
