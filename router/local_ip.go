@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"slices"
 
 	"github.com/labstack/echo/v4"
 )
 
 var (
-	localInternetAddresses      []net.IP
+	localInternetAddresses      []string
 	localInternetAddressesMutex sync.RWMutex
 )
 
@@ -34,11 +35,19 @@ func updateLocalIPAddresses() {
 		log.Printf("Error in updateLocalIPAddresses: %v", err)
 	}
 
+	var ipStrings []string
+	for _, ip := range ips {
+		ipStrings = append(ipStrings, ip.String())
+	}
+
 	localInternetAddressesMutex.Lock()
 	defer localInternetAddressesMutex.Unlock()
-	localInternetAddresses = ips
+	hasChanged := !slices.Equal(ipStrings, localInternetAddresses)
+	localInternetAddresses = ipStrings
 
-	log.Printf("Updated local IP addresses to: %v", ips)
+	if hasChanged {
+		log.Printf("Updated local IP addresses to: %v", ipStrings)
+	}
 }
 
 func requireLocalNetworkMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -55,7 +64,7 @@ func requireLocalNetworkMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		localInternetAddressesMutex.RLock()
 		defer localInternetAddressesMutex.RUnlock()
 		for _, allowedIP := range localInternetAddresses {
-			if ip == allowedIP.String() {
+			if ip == allowedIP {
 				// Continue to the next middleware or route handler
 				return next(c)
 			}
